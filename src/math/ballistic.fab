@@ -1,0 +1,66 @@
+//! Define ballistic trajectory for jump and projectile movement
+
+/// A set of parameters used for trajectory calculation
+/// Can only be used at compile time for constants
+struct Ballistic
+
+    /// Height of the peak of the trajectory
+    Real height
+
+    /// Time to reach the peak of the height 
+    /// (i.e. half of the whole travel duration)
+    Real time
+
+    /// Initial vertical impulse
+    Real impulse
+
+    /// Gravity applied to the projectile
+    Real gravity
+
+
+// Compile time functions to compute a ballistic trajectory from two contraints
+
+/// contrained by height of the peak and time to reach that peak 
+ct fn from_height_and_time(Real height, Real time) Ballistic
+    Real impulse =  2.0 * height / time
+    Real gravity = -2.0 * height / (time * time)
+    return Ballistic(height, time, impulse, gravity)
+
+/// constrained by the height of the peak and the initial vertical velocity
+ct fn from_height_and_impulse(Real height, Real impulse) Ballistic
+    Real time    = 2.0 * height / impulse
+    Real gravity = -(impulse * impulse) / (2.0 * height)
+    return Ballistic(height, time, impulse, gravity)
+
+/* SQRT not supported
+/// constrained by the height of the peak and the gravity applied
+ct fn from_height_and_gravity(Real height, Real gravity) Ballistic
+    Real time    = sqrt(2.0 * height / gravity)
+    Real impulse = sqrt(2.0 * height * gravity)
+    return Ballistic(height, time, impulse, gravity)
+// */
+
+/// constrained by the time to reach the peak and the initial vertical velocity
+ct fn from_time_and_impulse(Real time, Real impulse) Ballistic
+    Real height  = 0.5 * impulse * time
+    Real gravity = -impulse * time
+    return Ballistic(height, time, impulse, gravity)
+
+/// constrained by the time to reach the peak and the gravity applied
+ct fn from_time_and_gravity(Real time, Real gravity) Ballistic
+    Real height  = -0.5 * gravity * (time * time)
+    Real impulse = -gravity * time
+    return Ballistic(height, time, impulse, gravity)
+
+/// constrained by the initial vertical velocity and the gravity applied
+ct fn from_impulse_and_gravity(Real impulse, Real gravity) Ballistic
+    Real height = -0.5 * (impulse * impulse) / gravity
+    Real time   = -impulse / gravity
+    return Ballistic(height, time, impulse, gravity)
+
+/// compute the time to reach the peak from the
+/// horizontal speed, the jump and an arbitrary ratio
+ct fn from_speed_range_and_ratio(Real speed, Real range, Real ratio) Vec2
+    Real time = range / speed
+    return Vec2(time * ratio, time * (1.0 - ratio))
+

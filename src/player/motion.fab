@@ -1,0 +1,197 @@
+vars
+    SF TARGET_SPEED
+
+// Move a player in the world
+fn move_player(Pad pad, Player player) Player
+
+    // Obtain some states about the player
+    Bool running  = pad.held & BUTTON_B
+    Bool grounded = player.collision_mask & COLLISION.floor
+
+    // determine which direction the player wants to move toward
+    ct U BOTH_DIRECTION = BUTTON_LEFT | BUTTON_RIGHT
+    switch pad.held & BOTH_DIRECTION
+        // the player is only holding left
+        case BUTTON_LEFT
+            player.velocity.x -= eval_horizon_vel(running, grounded, -player.velocity.x)
+            break
+
+        // the player is only holding right
+        case BUTTON_RIGHT
+            player.velocity.x += eval_horizon_vel(running, grounded, player.velocity.x)
+            break
+
+        // the player is holding both direction or none
+        default
+            // if the velocity is already at zero, there is nothing to do
+            if player.velocity.x != 0.0
+
+                // We want to subtract a part of the velocity
+                UF sub_speed = abs(player.velocity.x)
+                if grounded
+                    sub_speed *= PLAYER_CONFIG.move_run.accel_floor * DELTA_TIME
+                else
+                    sub_speed *= PLAYER_CONFIG.move_run.accel_air   * DELTA_TIME
+
+                // ensure that we are decrementing for sure
+                sub_speed += EPSILON
+
+                // Bring the player velocity closer to zero
+                if S(player.velocity.x) < 0
+                    player.velocity.x += sub_speed
+                else
+                    player.velocity.x -= sub_speed
+
+
+    // Check whenever the player should jump
+    Bool wants_to_jump = false
+
+    // The player just pressed the jump button while airborne
+    if pad.pressed & BUTTON_A
+        // reset the timer for the input buffering
+        player.delay_input = REACTION_TIME
+
+        // Check if the player was on the ground a few frames ago
+        if player.delay_ground > 0
+            wants_to_jump = true
+
+    // If the player is on the floor
+    if grounded
+        // Make the player stick to the ground
+        player.velocity.y = 0.0
+
+        // reset the timer for coyote time
+        player.delay_ground = REACTION_TIME
+
+        // Check if the player pressed the jump button a few frames ago
+        if player.delay_input > 0
+            wants_to_jump = true
+
+    else
+        // If the player is against a wall
+        if player.collision_mask & (COLLISION.left | COLLISION.right)
+            // reset the timer for coyote time
+            player.delay_ground = REACTION_TIME
+
+            // Check if the player pressed the jump button a few frames ago
+            if player.delay_input > 0
+                wants_to_jump = true
+
+
+        // Determine the gravity force to apply to the player
+        if S(player.velocity.y) >= 0 // (Down is positive)
+            player.velocity.y -= PLAYER_CONFIG.fall_gravity      * SQR_DELTA
+        else if pad.held & BUTTON_A
+            player.velocity.y -= PLAYER_CONFIG.jump_high.gravity * SQR_DELTA
+        else
+            player.velocity.y -= PLAYER_CONFIG.jump_low.gravity  * SQR_DELTA
+
+        // decrement the grounded timer
+        // (this only need to run when the player is actually not grounded)
+        if ! (player.delay_ground -= 1)
+            player.delay_ground = 0
+
+    // decrement the input buffering timer
+    // (run it always since the button press is instantaneous)
+    if ! (player.delay_input -= 1)
+        player.delay_input = 0
+
+    // The player wants to jump
+    if wants_to_jump
+        // Reset both timers
+        player.delay_ground = 0
+        player.delay_input  = 0
+
+        // define the two components of a walljump
+        ct Real WALLJUMP_X = PLAYER_CONFIG.move_run.max_speed * DELTA_TIME
+        ct Real WALLJUMP_Y = PLAYER_CONFIG.walljump.impulse   * DELTA_TIME
+
+        // Trigger a jump
+        ct U JUMP_COLLISION = COLLISION.left | COLLISION.right | COLLISION.floor | COLLISION.entity_head
+        switch player.collision_mask & JUMP_COLLISION
+            // There is only a wall on the left -> Walljump to the right
+            case COLLISION.left
+                player.velocity.x = +WALLJUMP_X
+                player.velocity.y = -WALLJUMP_Y
+                break
+
+            // There is only a wall on the right -> Walljump to the left
+            case COLLISION.right
+                player.velocity.x = -WALLJUMP_X
+                player.velocity.y = -WALLJUMP_Y
+                break
+
+            // On the floor or on the head of another entity -> Jump upward
+            default
+                // TODO: how to handle high and low jumps for entity head bounce ?
+                player.velocity.y = -PLAYER_CONFIG.jump_high.impulse * DELTA_TIME
+
+
+    // Apply the computed velocity to the position of the character
+    player.position.x += player.velocity.x
+    player.position.y += player.velocity.y
+
+    // <testing>
+
+    ct Real FLOOR_HEIGHT = 20.0
+    ct Real WALL_LEFT = 1.0
+    ct Real WALL_RIGHT = 31.0
+
+    if player.position.y >= FLOOR_HEIGHT
+        player.position.y = FLOOR_HEIGHT
+        player.collision_mask |= COLLISION.floor
+    else
+        player.collision_mask &= ~COLLISION.floor
+
+    if player.position.x <= WALL_LEFT
+        player.position.x = WALL_LEFT
+        player.collision_mask |= COLLISION.left
+    else
+        player.collision_mask &= ~COLLISION.left
+
+    if player.position.x >= WALL_RIGHT
+        player.position.x = WALL_RIGHT
+        player.collision_mask |= COLLISION.right
+    else
+        player.collision_mask &= ~COLLISION.right
+
+    // </testing>
+
+    return player
+
+
+// Evaluate the horizontal velocity to apply to the player.
+// We calculate the velocity as a strictly positive value so that
+// we can apply a constant multiplication without calculation inaccuracies.
+fn eval_horizon_vel(Bool running, Bool grounded, SF prev_vel) UF
+    UF new_speed
+
+    // pick the target speed based on whether the player is running or walking
+    if running
+        new_speed = PLAYER_CONFIG.move_run.max_speed * DELTA_TIME
+    else
+        ct Real SPEED = PLAYER_CONFIG.move_walk.max_speed * DELTA_TIME
+        new_speed = SPEED
+        if prev_vel > SPEED
+            prev_vel = SPEED
+
+    // evaluate the speed difference with previous' frame velocity
+    new_speed -= prev_vel
+
+    // apply appropriate acceleration rate
+    if running
+        ct Inertia MOVE = PLAYER_CONFIG.move_run
+        if grounded
+            new_speed *= MOVE.accel_floor * DELTA_TIME
+        else
+            new_speed *= MOVE.accel_air   * DELTA_TIME
+    else
+        ct Inertia MOVE = PLAYER_CONFIG.move_walk
+        if grounded
+            new_speed *= MOVE.accel_floor * DELTA_TIME
+        else
+            new_speed *= MOVE.accel_air   * DELTA_TIME
+
+    TARGET_SPEED = SF(new_speed)
+
+    return new_speed

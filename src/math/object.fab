@@ -1,0 +1,34 @@
+//! Components used to represent game objects
+
+
+/// Position of an entity in the world in tile unit
+struct Position
+    UF x
+    UF y
+
+/// Size of an object
+struct Dimension
+    U width
+    U height
+
+/// Velocity of an object
+struct Velocity
+    SF x
+    SF y
+
+
+/// Check if two objects intersect over one axis
+fn overlap_single_axis(UF a_pos, U a_dim, UF b_pos, U b_dim) Bool
+: +inline
+    Bool c
+    c = (a_pos -= b_pos)
+    c = (a_pos -= UF(b_dim - U(c)))
+    return a_pos += UF(a_dim + b_dim - 1 + U(c))
+
+
+/// Check if two objects intersect
+fn overlap(Position a_pos, Dimension a_dim, Position b_pos, Dimension b_dim) Bool
+    return (
+        overlap_single_axis(a_pos.x, a_dim.width , b_pos.x, b_dim.width ) &&
+        overlap_single_axis(a_pos.y, a_dim.height, b_pos.y, b_dim.height))
+

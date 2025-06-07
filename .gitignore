@@ -1,0 +1,6 @@
+# Ignore GIMP file
+assets/*.xcf
+
+# Ignore generated NES ROM
+*.nes
+

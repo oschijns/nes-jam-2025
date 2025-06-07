@@ -1,0 +1,19 @@
+//! Define collision masks
+
+/// Collision masks
+struct CollisionMask
+    U floor
+    U ceiling
+    U left
+    U right
+    U entity_head
+
+/// Collision masks
+ct CollisionMask COLLISION = CollisionMask(
+    1 << 7, // floor
+    1 << 6, // ceiling
+    1 << 5, // left
+    1 << 4, // right
+    1 << 3, // head of another entity
+)
+

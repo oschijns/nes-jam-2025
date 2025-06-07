@@ -1,0 +1,26 @@
+//! Basic math components
+
+
+/// Frames per second
+ct Real FPS = 60.0
+
+/// Duration of a frame in seconds
+ct Real DELTA_TIME = 1.0 / FPS
+
+/// Squared delta time
+/// (for acceleration calculation)
+ct Real SQR_DELTA = DELTA_TIME * DELTA_TIME
+
+
+/// Epsilon distance (0.0000_0001)
+ct Real EPSILON = $0.01
+
+
+/// Shift to convert a position into screen coordinates
+ct Int TILE_SHIFT = 3
+
+
+/// A pair of two real numbers computed at compile time
+struct Vec2
+    Real x
+    Real y

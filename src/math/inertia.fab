@@ -1,0 +1,27 @@
+//! Horizontal inertia
+
+/// Inertia configuration
+struct Inertia
+
+    /// Cap the speed of the object
+    Real max_speed
+
+    /// Acceleration rate when grounded
+    Real accel_floor
+
+    /// Acceleration rate when airborne
+    Real accel_air
+
+
+/// Create an inertia configuration from top speed 
+/// and acceleration when grounded and when airborne
+ct fn make_inertia(
+        Real speed, 
+        Real accel_time_floor, 
+        Real accel_time_air
+    ) Inertia
+    return Inertia(
+        speed,
+        speed / accel_time_floor,
+        speed / accel_time_air
+    )

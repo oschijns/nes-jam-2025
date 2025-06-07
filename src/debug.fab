@@ -1,0 +1,40 @@
+
+
+// Print a velocity element at some position on the screen
+fn print_vel(SF vel)
+    // decompose the value
+    U sign
+    if vel < 0.0
+        sign = '-'ascii
+    else
+        sign = '+'ascii
+    UF avel = abs(vel)
+    U[3] whole = u_to_ddd(U(avel))
+    U[2] frac  = f_to_dd(F(avel))
+
+    ct U ZERO = '0'ascii
+
+    {PPUDATA}(sign)
+    {PPUDATA}(whole[2] + ZERO)
+    {PPUDATA}(whole[1] + ZERO)
+    {PPUDATA}(whole[0] + ZERO)
+    {PPUDATA}('.'ascii)
+    {PPUDATA}(frac[0] + ZERO)
+    {PPUDATA}(frac[1] + ZERO)
+
+
+// Print
+fn print_hex(U a)
+    // decompose the value into two
+    _print_hex_nimble(a >> 4)
+    _print_hex_nimble(a & %1111)
+
+
+fn _print_hex_nimble(U a)
+    ct U ZERO  = '0'ascii
+    ct U ALPHA = 'A'ascii
+    if a < $A
+        a += ZERO
+    else
+        a += ALPHA - $A
+    {PPUDATA}(a)

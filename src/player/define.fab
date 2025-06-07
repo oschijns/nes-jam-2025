@@ -1,0 +1,124 @@
+
+
+// Player's reaction time delay
+ct Int REACTION_TIME = max(Int(FPS * 0.200), 1)
+
+
+/// A player in the game
+struct Player
+    // Position of the player in the world
+    Position position
+
+    // Velocity of the player
+    Velocity velocity
+
+    // Player collision mask
+    U collision_mask
+
+    // Count down a time period when the player can still jump
+    U delay_ground // player was on the ground (coyote-time)
+    U delay_input  // player pressed the jump button (input buffering)
+
+
+/// Player configuration
+struct PlayerConfig
+    // Dimensions of the player in pixels
+    Dimension dimension
+
+    // Horizontal speed configuration of the player
+    Inertia move_run
+    Inertia move_walk
+
+    // Jump trajectory configuration
+    Ballistic jump_high
+    Ballistic jump_low
+    Real fall_gravity
+
+    // Walljump configuration
+    Ballistic walljump
+
+
+/// Create the config
+ct PlayerConfig PLAYER_CONFIG = make_player_config(
+    Dimension(1, 1), // dimensions
+    10.0, // running speed (tile/s)
+     0.6, // walking speed ratio compared to running speed [0,1]
+     0.2, // acceleration time when grounded (sec)
+     6.0, // acceleration time when airborne (sec)
+     5.0, // maximum jump height (tile)
+     2.0, // minimum jump height (tile)
+     8.0, // maximum jump range  (tile)
+     0.6, // offset of the peak of the jump ]0,1[
+     2.0, // maximum walljump height (tile)
+     3.5  // maximum walljump range  (tile)
+)
+
+
+/// Construct a player configuration from a set of parameters
+ct fn make_player_config(
+        Dimension dimension  , // width and height of the player
+        Real max_speed       , // maximum speed when running
+        Real walk_ratio      , // walking speed ratio to running speed [0,1] 
+        Real accel_time_floor, // acceleration time when grounded (sec)
+        Real accel_time_air  , // acceleration time when airborne (sec)
+        Real jump_max_height , // maximum jump height (tile)
+        Real jump_min_height , // minimum jump height (tile)
+        Real jump_range      , // maximum jump range  (tile)
+        Real jump_peak_offset, // offset the peak of the jump ]0,1[
+        Real walljump_height , // maximum height of the walljump (tile)
+        Real walljump_range    // maximum range  of the walljump (tile)
+    ) PlayerConfig
+
+    // Compute the inertias given the horizontal velocity parameters
+    Real speed_run  = max_speed
+    Real speed_walk = max_speed * walk_ratio
+    Inertia move_run  = make_inertia(speed_run , accel_time_floor, accel_time_air)
+    Inertia move_walk = make_inertia(speed_walk, accel_time_floor, accel_time_air)
+
+    // compute two time components
+    // the first one for ascending and 
+    // the second one for falling
+    Vec2 jump_times = from_speed_range_and_ratio(speed_run, jump_range, jump_peak_offset) 
+
+    // compute the main trajectory and 
+    // derivate other trajectories from it
+    Ballistic jump_high = from_height_and_time    (jump_max_height, jump_times.x)
+    Ballistic jump_low  = from_height_and_impulse (jump_min_height, jump_high.impulse)
+    Real fall_gravity   = from_height_and_time    (jump_max_height, jump_times.y).gravity
+
+    // Compute the walljump trajectory
+    Real walljump_time = from_speed_range_and_ratio(speed_run, walljump_range, jump_peak_offset).x
+    Ballistic walljump = from_height_and_time(walljump_height, walljump_time)
+
+    // Produce a player config
+    return PlayerConfig(
+        dimension,
+        move_run,
+        move_walk,
+        jump_high,
+        jump_low,
+        fall_gravity,
+        walljump
+    )
+
+
+// Define the walljump configuration
+ct Real PLAYER_WALL_SLIDE_SPEED = 0.5
+
+
+// Declare a pool of two players
+macro("pool_contiguous", "Player", "2", "players")
+
+
+// Initialize the players
+fn init_players(U num, Position start_pos)
+    players_num = num
+    for U i = 0; i < players_num; i += 1
+        players[i] = Player(start_pos, Velocity(), 0, 0, 0)
+
+
+// Compute the velocity of the players based on their inputs
+fn move_players()
+    for U i = 0; i < players_num; i += 1
+        players[i] = move_player(pads[i], players[i])
+
