@@ -4,5 +4,5 @@
 nesfab nes-jam.cfg
 
 # And run
-mesen nes-jam.nes
+#mesen nes-jam.nes
 

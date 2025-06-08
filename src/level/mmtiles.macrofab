@@ -1,0 +1,41 @@
+#:name:# 
+#:chr_name:#
+#:palette_name:#
+
+// Meta-meta-tiles are 4x4 square of tiles with corresponding attributes byte 
+// and collision definition. This approach allow simplifying level generation.
+
+
+// Construct an array where each meta-meta-tile is spread over multiple arrays 
+// without double indirection. 
+ct fn mmtiles_access(U{} mmt, U index) U{}
+    U{} out = U{}()
+    for U i = 0; i < len(mmt); i += 4
+        push(out, mmt{i + index})
+    return out
+
+
+// the meta-meta-tiles are store rows-by-rows
+ct Int mmtiles_count = _mmt_num // number of meta-meta-tiles
+ct U[_mmt_num] mmtiles_def_00 = (mmtiles_access(_mmt_nw, 0)) // row 0
+ct U[_mmt_num] mmtiles_def_01 = (mmtiles_access(_mmt_nw, 1))
+ct U[_mmt_num] mmtiles_def_02 = (mmtiles_access(_mmt_ne, 0))
+ct U[_mmt_num] mmtiles_def_03 = (mmtiles_access(_mmt_ne, 1))
+ct U[_mmt_num] mmtiles_def_10 = (mmtiles_access(_mmt_nw, 2)) // row 1
+ct U[_mmt_num] mmtiles_def_11 = (mmtiles_access(_mmt_nw, 3))
+ct U[_mmt_num] mmtiles_def_12 = (mmtiles_access(_mmt_ne, 2))
+ct U[_mmt_num] mmtiles_def_13 = (mmtiles_access(_mmt_ne, 3))
+ct U[_mmt_num] mmtiles_def_20 = (mmtiles_access(_mmt_sw, 0)) // row 2
+ct U[_mmt_num] mmtiles_def_21 = (mmtiles_access(_mmt_sw, 1))
+ct U[_mmt_num] mmtiles_def_22 = (mmtiles_access(_mmt_se, 0))
+ct U[_mmt_num] mmtiles_def_23 = (mmtiles_access(_mmt_se, 1))
+ct U[_mmt_num] mmtiles_def_30 = (mmtiles_access(_mmt_sw, 2)) // row 3
+ct U[_mmt_num] mmtiles_def_31 = (mmtiles_access(_mmt_sw, 3))
+ct U[_mmt_num] mmtiles_def_32 = (mmtiles_access(_mmt_se, 2))
+ct U[_mmt_num] mmtiles_def_33 = (mmtiles_access(_mmt_se, 3))
+ct U[_mmt_num] mmtiles_attr = (_mmt_attributes) // attributes for the whole meta-meta-tiles
+// (mmtiles_access(_mmt_nw, _collisions)) // collision
+// (mmtiles_access(_mmt_ne, _collisions))
+// (mmtiles_access(_mmt_sw, _collisions))
+// (mmtiles_access(_mmt_se, _collisions))
+

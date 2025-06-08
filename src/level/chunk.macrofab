@@ -1,0 +1,11 @@
+#:name:# 
+#:chr_name:# 
+#:palette_name:# 
+#:metatiles_name:# 
+
+data /chunks
+    [] chunk_#name#
+        U(_width  / 4) // width  of the chunk in meta-meta-tiles
+        U(_height / 4) // height of the chunk in meta-meta-tiles
+        //(@mmtiles_def) // Pointer to the meta-meta-tiles
+

@@ -1,5 +1,5 @@
 #:name:# 
 
 data /palettes
-    [] pal_#name#
+    [] palette_#name#
         U[25](_palette)

@@ -1,4 +1,4 @@
-vars
+vars /players
     SF TARGET_SPEED
 
 // Move a player in the world

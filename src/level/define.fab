@@ -7,79 +7,72 @@
 // This example shows how to load a MapFab file containing 3 levels.
 // When running the example, hit any key to change the current level.
 
+
+// Define the tileset (commonly called CHR):
+chrrom
+    file(fmt, "../../assets/tiles.png")
+
+
 // Load the .mapfab file, calling the macros for each definition.
-mapfab(map_data, "assets/maps.mapfab", "chr", "palette", "metatiles", "level")
-
-vars /metatiles
-    CC/metatiles mt_nw
-    CC/metatiles mt_ne
-    CC/metatiles mt_sw
-    CC/metatiles mt_se
-    CC/metatiles mt_ca
-
-// Sets the 'mt_' pointers to offsets of 'mt'.
-fn load_metatiles(CC/metatiles mt)
-    UU size = UU(read U(mt))
-    if size == 0
-        size = 256
-    mt_nw = mt
-    mt += size
-    mt_ne = mt
-    mt += size
-    mt_sw = mt
-    mt += size
-    mt_se = mt
-    mt += size
-    mt_ca = mt
-
-fn load_level(CCC/levels level)
-    // CHR:
-    U chr_bank = read U(level)
-    state(chr_bank)
-
-    // Palette:
-    load_palette(read CCC/palettes(level))
-    ppu_upload_palette()
-
-    // Metatiles:
-    load_metatiles(read CC/metatiles(level))
-
-    // Level tiles:
-    ppu_reset_addr($2000)
-    CCC/levels tiles = level
-    for U y = 0; y < 15; y += 1
-        for U x = 0; x < 16; x += 1
-            U tile = tiles[x]
-            {PPUDATA}(mt_nw[tile])
-            {PPUDATA}(mt_ne[tile])
-        for U x = 0; x < 16; x += 1
-            U tile = tiles[x]
-            {PPUDATA}(mt_sw[tile])
-            {PPUDATA}(mt_se[tile])
-        tiles += 16
-
-    // Level attributes:
-    tiles = level
-    for U y = 0; y < 15; y += 2
-        for U x = 0; x < 16; x += 2
-            U attr = mt_ca[tiles[x + 17]]
-            attr <<= 2
-            attr |= mt_ca[tiles[x + 16]] & %11
-            attr <<= 2
-            attr |= mt_ca[tiles[x + 1]] & %11
-            attr <<= 2
-            attr |= mt_ca[tiles[x + 0]] & %11
-            {PPUDATA}(attr)
-        tiles += 32
+mapfab(mmt_32, "../../assets/chunks.mapfab", "", "palette", "mmtiles", "chunk")
 
 
-ct CCC/levels[] levels = CCC/levels[](
-    @lev_l1,
-    @lev_l2,
-    @lev_l3)
+/// Write a meta-meta-tile to a specific location
+fn load_mmt(U nt_marker, U x, U y, U mmt_index)
+
+    // compute the address where to write the tiles
+    UU nt_addr = UU(UF(nt_marker)) + (UU(y) << 7) + UU(x)
+    load_mmt_tiles(nt_addr, mmt_index)
+
+    // compute the address where to write the attributes
+    nt_addr = UU(UF(nt_marker)) + $3C0 + (UU(y) << 3) + UU(x)
+    ppu_reset_addr(nt_addr)
+    {PPUDATA}(mmtiles_attr[mmt_index])
 
 
+/// Write a row of a sequence of meta-meta-tiles
+fn load_mmt_tiles(UU nt_addr, U mmt_index)
+: +inline
+
+    ppu_reset_addr(nt_addr)
+    {PPUDATA}(mmtiles_def_00[mmt_index])
+    {PPUDATA}(mmtiles_def_01[mmt_index])
+    {PPUDATA}(mmtiles_def_02[mmt_index])
+    {PPUDATA}(mmtiles_def_03[mmt_index])
+
+    nt_addr += 32 // next row
+    ppu_reset_addr(nt_addr)
+    {PPUDATA}(mmtiles_def_10[mmt_index])
+    {PPUDATA}(mmtiles_def_11[mmt_index])
+    {PPUDATA}(mmtiles_def_12[mmt_index])
+    {PPUDATA}(mmtiles_def_13[mmt_index])
+
+    nt_addr += 32 // next row
+    ppu_reset_addr(nt_addr)
+    {PPUDATA}(mmtiles_def_20[mmt_index])
+    {PPUDATA}(mmtiles_def_21[mmt_index])
+    {PPUDATA}(mmtiles_def_22[mmt_index])
+    {PPUDATA}(mmtiles_def_23[mmt_index])
+
+    nt_addr += 32 // next row
+    ppu_reset_addr(nt_addr)
+    {PPUDATA}(mmtiles_def_30[mmt_index])
+    {PPUDATA}(mmtiles_def_31[mmt_index])
+    {PPUDATA}(mmtiles_def_32[mmt_index])
+    {PPUDATA}(mmtiles_def_33[mmt_index])
+
+
+
+ct CCC/chunks[] chunks = CCC/chunks[](
+    @chunk_earth,
+    @chunk_stone,
+    @chunk_leaves
+)
+
+/*
 mode main_level()
     {PPUMASK}(0)
     load_level(levels[level_index])
     {PPUMASK}(PPUMASK_ON) // Turn on rendering afterwards
+
+*/

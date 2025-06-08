@@ -114,6 +114,4 @@ fn tile_at(U x, U y) U
     // Return the tile:
     return (level_ptr + UU(y * 32))[x]
 
-// Define the tileset (commonly called CHR):
-chrrom
-    file(fmt, "../assets/dungeon-437.png")
+
